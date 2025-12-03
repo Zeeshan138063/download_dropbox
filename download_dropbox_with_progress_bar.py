@@ -35,7 +35,7 @@ def assign_child_index(parent_to_children, parent, child_name):
     return children.index(child_name) + 1  # 1-based
 
 
-def download_zip(url: str) -> bytes:
+def download_zip(url: str) -> io.BytesIO:
     logging.info("Downloading ZIP from %s", url)
     resp = requests.get(url, stream=True)
     resp.raise_for_status()
@@ -50,9 +50,9 @@ def download_zip(url: str) -> bytes:
             pbar.update(len(chunk))
     pbar.close()
 
-    data.seek(0)
+    data.seek(0)  # Reset to beginning
     logging.info("Download complete (%.2f MB)", len(data.getbuffer()) / (1024 * 1024))
-    return data.read()
+    return data  # Return BytesIO object, not bytes
 
 
 def extract_wavs(zf: zipfile.ZipFile):
@@ -94,8 +94,8 @@ def main():
     OUTPUT_BASE.mkdir(parents=True, exist_ok=True)
     url = to_zip_url(SHARED_LINK)
 
-    zip_bytes = download_zip(url)
-    with zipfile.ZipFile(io.BytesIO(zip_bytes)) as zf:
+    zip_data = download_zip(url)  # Returns BytesIO object
+    with zipfile.ZipFile(zip_data) as zf:
         extract_wavs(zf)
 
     logging.info("All done! Files are under %s", OUTPUT_BASE.resolve())
